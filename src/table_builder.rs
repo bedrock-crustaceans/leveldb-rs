@@ -106,7 +106,7 @@ impl<Dst: Write> TableBuilder<Dst> {
     /// The comparator in opt will be wrapped in a InternalKeyCmp, and the filter policy
     /// in an InternalFilterPolicy.
     pub fn new(mut opt: Options, dst: Dst) -> TableBuilder<Dst> {
-        opt.cmp = Rc::new(Box::new(InternalKeyCmp(opt.cmp.clone())));
+        opt.cmp = Rc::new(InternalKeyCmp(opt.cmp.clone()));
         opt.filter_policy = Rc::new(Box::new(InternalFilterPolicy::new(opt.filter_policy)));
         TableBuilder::new_raw(opt, dst)
     }

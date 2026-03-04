@@ -147,7 +147,7 @@ mod tests {
         // Tests that a table can be written to a MemFS file, read back by the table cache and
         // parsed/iterated by the table reader.
         let mut opt = options::for_test();
-        opt.env = Rc::new(Box::new(MemEnv::new()));
+        opt.env = Rc::new(MemEnv::new());
         let bc = share(Cache::new(128));
         let dbname = Path::new("testdb1");
         let tablename = table_file_name(dbname, 123);

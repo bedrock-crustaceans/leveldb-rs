@@ -22,8 +22,8 @@ const DEFAULT_BITS_PER_KEY: u32 = 10; // NOTE: This may need to be optimized.
 /// self-explanatory; the defaults are defined in the `Default` implementation.
 #[derive(Clone)]
 pub struct Options {
-    pub cmp: Rc<Box<dyn Cmp>>,
-    pub env: Rc<Box<dyn Env>>,
+    pub cmp: Rc<dyn Cmp>,
+    pub env: Rc<dyn Env>,
     pub log: Option<Shared<Logger>>,
     pub create_if_missing: bool,
     pub error_if_exists: bool,
@@ -55,8 +55,8 @@ type DefaultEnv = crate::mem_env::MemEnv;
 impl Default for Options {
     fn default() -> Options {
         Options {
-            cmp: Rc::new(Box::new(DefaultCmp)),
-            env: Rc::new(Box::new(DefaultEnv::new())),
+            cmp: Rc::new(DefaultCmp),
+            env: Rc::new(DefaultEnv::new()),
             log: None,
             create_if_missing: true,
             error_if_exists: false,
@@ -135,14 +135,14 @@ impl Default for CompressorList {
 /// disk. This is useful for testing or ephemeral databases.
 pub fn in_memory() -> Options {
     Options {
-        env: Rc::new(Box::new(MemEnv::new())),
+        env: Rc::new(MemEnv::new()),
         ..Options::default()
     }
 }
 
 pub fn for_test() -> Options {
     Options {
-        env: Rc::new(Box::new(MemEnv::new())),
+        env: Rc::new(MemEnv::new()),
         log: Some(share(infolog::stderr())),
         ..Options::default()
     }

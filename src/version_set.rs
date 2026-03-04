@@ -24,7 +24,7 @@ pub struct Compaction {
     max_file_size: usize,
     input_version: Option<Shared<Version>>,
     level_ixs: [usize; NUM_LEVELS],
-    cmp: Rc<Box<dyn Cmp>>,
+    cmp: Rc<dyn Cmp>,
     icmp: InternalKeyCmp,
 
     manual: bool,
@@ -516,7 +516,7 @@ impl VersionSet {
             lw.flush()?;
         }
         set_current_file(
-            self.opt.env.as_ref().as_ref(),
+            self.opt.env.as_ref(),
             &self.dbname,
             self.manifest_num,
         )?;
@@ -562,7 +562,7 @@ impl VersionSet {
     pub fn recover(&mut self) -> Result<bool> {
         assert!(self.current.is_some());
 
-        let mut current = read_current_file(self.opt.env.as_ref().as_ref(), &self.dbname)?;
+        let mut current = read_current_file(self.opt.env.as_ref(), &self.dbname)?;
         let len = current.len();
         current.truncate(len - 1);
         let current = Path::new(&current);
@@ -736,7 +736,7 @@ impl VersionSet {
             }
         }
         assert!(iters.len() <= cap);
-        let cmp: Rc<Box<dyn Cmp>> = Rc::new(Box::new(self.cmp.clone()));
+        let cmp: Rc<dyn Cmp> = Rc::new(self.cmp.clone());
         Box::new(MergingIter::new(cmp, iters))
     }
 }
@@ -1113,7 +1113,7 @@ mod tests {
             let mut lw = LogWriter::new(mffile);
             lw.add_record(&ve.encode()).unwrap();
             lw.flush().unwrap();
-            set_current_file(opt.env.as_ref().as_ref(), "db", 19).unwrap();
+            set_current_file(opt.env.as_ref(), "db", 19).unwrap();
         }
 
         // Recover from new state.
@@ -1230,7 +1230,7 @@ mod tests {
 
     /// iterator_properties tests that it contains len elements and that they are ordered in
     /// ascending order by cmp.
-    fn iterator_properties<It: LdbIterator>(mut it: It, len: usize, cmp: Rc<Box<dyn Cmp>>) {
+    fn iterator_properties<It: LdbIterator>(mut it: It, len: usize, cmp: Rc<dyn Cmp>) {
         let mut wr = LdbIteratorIter::wrap(&mut it);
         let first = wr.next().unwrap();
         let mut count = 1;
@@ -1295,7 +1295,7 @@ mod tests {
             iterator_properties(
                 vs.make_input_iterator(&c),
                 12,
-                Rc::new(Box::new(vs.cmp.clone())),
+                Rc::new(vs.cmp.clone()),
             );
 
             // Expand input range on higher level.
@@ -1310,7 +1310,7 @@ mod tests {
             iterator_properties(
                 vs.make_input_iterator(&c),
                 12,
-                Rc::new(Box::new(vs.cmp.clone())),
+                Rc::new(vs.cmp.clone()),
             );
 
             // is_trivial_move

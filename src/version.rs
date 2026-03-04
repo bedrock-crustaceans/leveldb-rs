@@ -23,7 +23,7 @@ pub struct GetStats {
 
 pub struct Version {
     table_cache: Shared<TableCache>,
-    user_cmp: Rc<Box<dyn Cmp>>,
+    user_cmp: Rc<dyn Cmp>,
     pub files: [Vec<FileMetaHandle>; NUM_LEVELS],
 
     pub file_to_compact: Option<FileMetaHandle>,
@@ -35,7 +35,7 @@ pub struct Version {
 struct DoSearchResult(Option<(Vec<u8>, Vec<u8>)>, Vec<FileMetaHandle>);
 
 impl Version {
-    pub fn new(cache: Shared<TableCache>, ucmp: Rc<Box<dyn Cmp>>) -> Version {
+    pub fn new(cache: Shared<TableCache>, ucmp: Rc<dyn Cmp>) -> Version {
         Version {
             table_cache: cache,
             user_cmp: ucmp,
@@ -388,7 +388,7 @@ impl Version {
 pub fn new_version_iter(
     files: Vec<FileMetaHandle>,
     cache: Shared<TableCache>,
-    ucmp: Rc<Box<dyn Cmp>>,
+    ucmp: Rc<dyn Cmp>,
 ) -> VersionIter {
     VersionIter {
         files,
@@ -662,40 +662,40 @@ pub mod testutil {
             (b"bab", b"val4", ValueType::TypeValue),
             (b"bba", b"val5", ValueType::TypeValue),
         ];
-        let t2 = write_table(env.as_ref().as_ref(), f2, 26, 2);
+        let t2 = write_table(env.as_ref(), f2, 26, 2);
         let f1: &[(&[u8], &[u8], ValueType)] = &[
             (b"aaa", b"val1", ValueType::TypeValue),
             (b"aab", b"val2", ValueType::TypeValue),
             (b"aac", b"val3", ValueType::TypeValue),
             (b"aba", b"val4", ValueType::TypeValue),
         ];
-        let t1 = write_table(env.as_ref().as_ref(), f1, 22, 1);
+        let t1 = write_table(env.as_ref(), f1, 22, 1);
         // Level 1
         let f3: &[(&[u8], &[u8], ValueType)] = &[
             (b"aaa", b"val0", ValueType::TypeValue),
             (b"cab", b"val2", ValueType::TypeValue),
             (b"cba", b"val3", ValueType::TypeValue),
         ];
-        let t3 = write_table(env.as_ref().as_ref(), f3, 19, 3);
+        let t3 = write_table(env.as_ref(), f3, 19, 3);
         let f4: &[(&[u8], &[u8], ValueType)] = &[
             (b"daa", b"val1", ValueType::TypeValue),
             (b"dab", b"val2", ValueType::TypeValue),
             (b"dba", b"val3", ValueType::TypeValue),
         ];
-        let t4 = write_table(env.as_ref().as_ref(), f4, 16, 4);
+        let t4 = write_table(env.as_ref(), f4, 16, 4);
         let f5: &[(&[u8], &[u8], ValueType)] = &[
             (b"eaa", b"val1", ValueType::TypeValue),
             (b"eab", b"val2", ValueType::TypeValue),
             (b"fab", b"val3", ValueType::TypeValue),
         ];
-        let t5 = write_table(env.as_ref().as_ref(), f5, 13, 5);
+        let t5 = write_table(env.as_ref(), f5, 13, 5);
         // Level 2
         let f6: &[(&[u8], &[u8], ValueType)] = &[
             (b"cab", b"val1", ValueType::TypeValue),
             (b"fab", b"val2", ValueType::TypeValue),
             (b"fba", b"val3", ValueType::TypeValue),
         ];
-        let t6 = write_table(env.as_ref().as_ref(), f6, 10, 6);
+        let t6 = write_table(env.as_ref(), f6, 10, 6);
         let f7: &[(&[u8], &[u8], ValueType)] = &[
             (b"gaa", b"val1", ValueType::TypeValue),
             (b"gab", b"val2", ValueType::TypeValue),
@@ -703,21 +703,21 @@ pub mod testutil {
             (b"gca", b"val4", ValueType::TypeDeletion),
             (b"gda", b"val5", ValueType::TypeValue),
         ];
-        let t7 = write_table(env.as_ref().as_ref(), f7, 5, 7);
+        let t7 = write_table(env.as_ref(), f7, 5, 7);
         // Level 3 (2 * 2 entries, for iterator behavior).
         let f8: &[(&[u8], &[u8], ValueType)] = &[
             (b"haa", b"val1", ValueType::TypeValue),
             (b"hba", b"val2", ValueType::TypeValue),
         ];
-        let t8 = write_table(env.as_ref().as_ref(), f8, 3, 8);
+        let t8 = write_table(env.as_ref(), f8, 3, 8);
         let f9: &[(&[u8], &[u8], ValueType)] = &[
             (b"iaa", b"val1", ValueType::TypeValue),
             (b"iba", b"val2", ValueType::TypeValue),
         ];
-        let t9 = write_table(env.as_ref().as_ref(), f9, 1, 9);
+        let t9 = write_table(env.as_ref(), f9, 1, 9);
 
         let cache = TableCache::new("db", opts.clone(), share(Cache::new(128)), 100);
-        let mut v = Version::new(share(cache), Rc::new(Box::new(DefaultCmp)));
+        let mut v = Version::new(share(cache), Rc::new(DefaultCmp));
         v.files[0] = vec![t1, t2];
         v.files[1] = vec![t3, t4, t5];
         v.files[2] = vec![t6, t7];
@@ -767,14 +767,14 @@ mod tests {
         let v = make_version().0;
         let iters = v.new_iters().unwrap();
         let mut opt = options::for_test();
-        opt.cmp = Rc::new(Box::new(InternalKeyCmp(Rc::new(Box::new(DefaultCmp)))));
+        opt.cmp = Rc::new(InternalKeyCmp(Rc::new(DefaultCmp)));
 
         let mut miter = MergingIter::new(opt.cmp.clone(), iters);
         assert_eq!(LdbIteratorIter::wrap(&mut miter).count(), 30);
 
         // Check that all elements are in order.
         let init = LookupKey::new(b"000", MAX_SEQUENCE_NUMBER);
-        let cmp = InternalKeyCmp(Rc::new(Box::new(DefaultCmp)));
+        let cmp = InternalKeyCmp(Rc::new(DefaultCmp));
         LdbIteratorIter::wrap(&mut miter).fold(init.internal_key().to_vec(), |b, (k, _)| {
             assert!(cmp.cmp(&b, &k) == Ordering::Less);
             k
@@ -940,7 +940,7 @@ mod tests {
     fn test_version_key_ordering() {
         time_test!();
         let fmh = new_file(1, &[1, 0, 0], 0, &[2, 0, 0], 1);
-        let cmp = InternalKeyCmp(Rc::new(Box::new(DefaultCmp)));
+        let cmp = InternalKeyCmp(Rc::new(DefaultCmp));
 
         // Keys before file.
         for k in &[&[0][..], &[1], &[1, 0], &[0, 9, 9, 9]] {
@@ -979,7 +979,7 @@ mod tests {
             new_file(2, &[2, 5, 0], 0, &[4, 0, 0], 1),
             new_file(3, &[3, 5, 1], 0, &[5, 0, 0], 1),
         ];
-        let cmp = InternalKeyCmp(Rc::new(Box::new(DefaultCmp)));
+        let cmp = InternalKeyCmp(Rc::new(DefaultCmp));
 
         assert!(some_file_overlaps_range(
             &cmp,

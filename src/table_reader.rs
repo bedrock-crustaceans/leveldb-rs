@@ -119,7 +119,7 @@ impl Table {
         file: Rc<Box<dyn RandomAccess>>,
         size: usize,
     ) -> Result<Table> {
-        opt.cmp = Rc::new(Box::new(InternalKeyCmp(opt.cmp.clone())));
+        opt.cmp = Rc::new(InternalKeyCmp(opt.cmp.clone()));
         opt.filter_policy = Rc::new(Box::new(filter::InternalFilterPolicy::new(
             opt.filter_policy,
         )));
